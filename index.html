@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Boletas — Colegio Escolaris</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js" crossorigin="anonymous"></script>
+<style>
+  :root{--teal:#244B5A;--teal-dark:#1a3a47;--orange:#DB6015;--yellow:#F7BE00;--light-blue:#F0F8FF;--green:#1a7a1a;--gray:#333;--muted:#7a8f9a;--border:#dde4e8;--bg:#f4f7f9}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--gray);min-height:100vh}
+  .header{background:linear-gradient(135deg,var(--teal),var(--teal-dark));padding:20px 24px;display:flex;align-items:center;gap:14px;border-bottom:3px solid var(--yellow)}
+  .header-icon{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--yellow),var(--orange));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  .header-title{color:#fff;font-size:17px;font-weight:700}.header-sub{color:rgba(255,255,255,.6);font-size:12px;margin-top:2px}
+  .container{max-width:700px;margin:0 auto;padding:24px 16px}
+
+  .dropzone{border:2px dashed var(--border);border-radius:16px;padding:52px 24px;text-align:center;cursor:pointer;background:#fff;transition:all .2s}
+  .dropzone:hover,.dropzone.drag-over{border-color:var(--orange);background:rgba(219,96,21,.03)}
+
+  .card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 5px rgba(0,0,0,.05);border:1px solid #e8eef2;margin-bottom:14px}
+  .card-header{padding:11px 18px;font-size:12.5px;font-weight:600;letter-spacing:.3px;color:#fff}
+  .card-body{padding:16px 18px}
+
+  .file-chip{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:9px 14px;border:1px solid #e2e8ed;font-size:13px;color:#556;margin-bottom:14px}
+  .file-chip-name{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-chip-badge{background:#e8f5e9;color:#2e7d32;font-size:10.5px;padding:2px 10px;border-radius:20px;font-weight:600}
+
+  .fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field-label{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+  .field-input{width:100%;padding:7px 11px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-family:inherit;color:var(--gray);outline:none}
+  .field-input:focus{border-color:var(--teal)}
+
+  .bloque-row{display:flex;gap:6px;margin-top:6px}
+  .bloque-btn{flex:1;padding:8px 0;border-radius:8px;font-size:13px;font-weight:600;border:2px solid var(--border);background:#fff;color:#556;cursor:pointer;font-family:inherit;transition:all .15s}
+  .bloque-btn.active{border-color:var(--orange);background:var(--orange);color:#fff}
+
+  .punteo-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;align-items:end}
+  .punteo-auto{font-size:12px;color:#9ab;padding-bottom:6px}
+
+  .grades-header{display:grid;grid-template-columns:2.2fr 1fr 1fr 1.2fr;padding:9px 16px;font-size:11.5px;font-weight:700;color:#333;background:var(--yellow)}
+  .grades-header span:not(:first-child){text-align:center}
+  .grade-row{display:grid;grid-template-columns:2.2fr 1fr 1fr 1.2fr;padding:8px 16px;font-size:12.5px;align-items:center;border-top:1px solid #eef2f5}
+  .grade-row:nth-child(odd){background:#fff}.grade-row:nth-child(even){background:var(--light-blue)}
+  .grade-row span:not(:first-child){text-align:center}
+  .status-ok{color:var(--green);font-weight:600;font-size:11.5px}
+  .status-warn{color:var(--orange);font-weight:600;font-size:11.5px}
+
+  .btn-row{display:flex;gap:10px;margin-top:4px}
+  .btn-secondary{flex:1;padding:11px;border-radius:10px;font-size:13px;font-weight:600;border:1.5px solid var(--border);background:#fff;color:#667;cursor:pointer;font-family:inherit}
+  .btn-primary{flex:2;padding:12px;border-radius:10px;font-size:14px;font-weight:700;border:none;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--orange),#c45510);box-shadow:0 2px 10px rgba(219,96,21,.3);font-family:inherit;letter-spacing:.3px}
+  .btn-primary:hover{filter:brightness(1.05)}
+
+  .img-upload{margin-top:10px;padding:10px 14px;border:1.5px dashed var(--border);border-radius:10px;text-align:center;cursor:pointer;transition:all .15s;font-size:11.5px;color:var(--muted)}
+  .img-upload:hover{border-color:var(--orange);background:rgba(219,96,21,.02)}
+  .img-upload.loaded{border-style:solid;border-color:#c8e6c9;background:#f1f8e9;color:var(--green)}
+
+  .spinner-wrap{text-align:center;padding:48px 24px}
+  .spinner{width:48px;height:48px;margin:0 auto 18px;border:3px solid var(--teal);border-top-color:var(--yellow);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .success-banner{background:#e8f5e9;padding:14px 18px;display:flex;align-items:center;gap:12px}
+  .download-btn{width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:700;border:none;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--teal),var(--teal-dark));box-shadow:0 2px 10px rgba(36,75,90,.3);font-family:inherit;margin-bottom:10px}
+  .download-btn:hover{filter:brightness(1.1)}
+
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">E</div>
+  <div><div class="header-title">Generador de Boletas</div><div class="header-sub">Colegio Escolaris · Subí un CSV → Descargá el PDF directo</div></div>
+</div>
+
+<div class="container">
+  <!-- UPLOAD -->
+  <div id="step-upload">
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" accept=".csv" style="display:none" id="fileInput">
+      <div style="font-size:44px;margin-bottom:10px;opacity:.75">📄</div>
+      <div style="font-size:15px;font-weight:600;color:var(--teal);margin-bottom:4px">Arrastrá el archivo CSV aquí</div>
+      <div style="font-size:12.5px;color:var(--muted)">o hacé clic para seleccionarlo</div>
+      <div style="margin-top:18px;font-size:11px;color:#9aabb5;background:#f5f8fa;border-radius:8px;padding:8px 14px;display:inline-block;line-height:1.6">
+        Columnas: <b style="color:#6a8a9a">student_name</b>, <b style="color:#6a8a9a">course_name</b>, <b style="color:#6a8a9a">current_points</b>, <b style="color:#6a8a9a">points_possible</b>, <b style="color:#6a8a9a">course_code</b>, <b style="color:#6a8a9a">term_name</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW -->
+  <div id="step-preview" class="hidden">
+    <div class="file-chip">
+      <span style="font-size:16px">📎</span>
+      <span class="file-chip-name" id="fileNameLabel"></span>
+      <span class="file-chip-badge">Leído</span>
+    </div>
+    <div class="card">
+      <div class="card-header" style="background:var(--teal)">Datos detectados del CSV</div>
+      <div class="card-body">
+        <div class="fields-grid">
+          <div><div class="field-label">Estudiante</div><input class="field-input" id="fld-student"></div>
+          <div><div class="field-label">Grado</div><input class="field-input" id="fld-grade"></div>
+          <div><div class="field-label">Plan / Término</div><input class="field-input" id="fld-term"></div>
+          <div><div class="field-label">Fecha</div><input class="field-input" id="fld-fecha" value="Abril 2026"></div>
+        </div>
+        <div><div class="field-label" style="margin-top:14px">Bloque</div><div class="bloque-row" id="bloque-row"></div></div>
+        <div class="punteo-row">
+          <div><div class="field-label">Punteo sugerido</div><input class="field-input" type="number" id="fld-punteo"></div>
+          <div class="punteo-auto" id="punteo-auto-label"></div>
+        </div>
+        <div class="img-upload" id="logo-area" onclick="document.getElementById('logoInput').click()">
+          <input type="file" accept="image/*" style="display:none" id="logoInput">
+          <span id="logo-text">📷 Clic para subir el logo del colegio</span>
+        </div>
+        <div class="img-upload" id="firma-area" onclick="document.getElementById('firmaInput').click()">
+          <input type="file" accept="image/*" style="display:none" id="firmaInput">
+          <span id="firma-text">✍️ Clic para subir firma y sello</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="grades-header"><span>CURSO</span><span>OBTENIDO</span><span>SUGERIDO</span><span>ESTADO</span></div>
+      <div id="grades-body"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="resetAll()">← Cambiar CSV</button>
+      <button class="btn-primary" onclick="generatePDF()">⬇ Generar y Descargar PDF</button>
+    </div>
+  </div>
+
+  <!-- GENERATING -->
+  <div id="step-generating" class="hidden"><div class="card"><div class="spinner-wrap"><div class="spinner"></div><div style="font-size:15px;font-weight:600;color:var(--teal)">Generando PDF...</div></div></div></div>
+
+  <!-- DONE -->
+  <div id="step-done" class="hidden">
+    <div class="card">
+      <div class="success-banner"><span style="font-size:26px">✅</span><div><div style="font-size:14px;font-weight:700;color:#2e7d32">Boleta generada exitosamente</div><div style="font-size:12px;color:#4a8a4f;margin-top:2px" id="done-subtitle"></div></div></div>
+      <div class="card-body" style="text-align:center"><div style="font-size:13px;color:#556;margin-bottom:14px">El PDF se descargó automáticamente. Si no apareció:</div><button class="download-btn" onclick="redownload()">⬇ Descargar PDF de nuevo</button></div>
+    </div>
+    <button class="btn-secondary" style="width:100%" onclick="resetAll()">Generar otra boleta</button>
+  </div>
+
+  <!-- ERROR -->
+  <div id="step-error" class="hidden"><div class="card" style="text-align:center;padding:32px"><div style="font-size:36px;margin-bottom:10px">⚠️</div><div style="font-size:14px;font-weight:600;color:#c0392b;margin-bottom:6px">Error</div><div style="font-size:13px;color:#667;margin-bottom:18px" id="error-message"></div><button class="btn-secondary" onclick="resetAll()">Intentar de nuevo</button></div></div>
+</div>
+
+<script>
+var BP={1:16,2:40,3:64,4:90,5:100};
+var GM={BAS1:"1° Básico",BAS2:"2° Básico",BAS3:"3° Básico",BACH1:"1° Bachillerato",BACH2:"2° Bachillerato",BACH3:"3° Bachillerato",BACH4:"4° Bachillerato",BAC1:"1° Bachillerato",BAC2:"2° Bachillerato",BAC3:"3° Bachillerato",BAC4:"4° Bachillerato"};
+var _s={courses:[],bloque:4,punteo:90,logoData:null,firmaData:null,lastBlob:null,lastName:""};
+
+function showStep(n){["upload","preview","generating","done","error"].forEach(function(s){document.getElementById("step-"+s).classList.toggle("hidden",s!==n);})}
+
+function parseLine(l){var r=[],c="",q=false;for(var i=0;i<l.length;i++){var ch=l[i];if(ch==='"')q=!q;else if(ch===','&&!q){r.push(c);c="";}else c+=ch;}r.push(c);return r;}
+function parseCSV(t){var ls=t.split("\n").filter(function(l){return l.trim();});if(ls.length<2)return null;var h=parseLine(ls[0]);return ls.slice(1).map(function(l){var v=parseLine(l),o={};h.forEach(function(k,i){o[k.trim()]=(v[i]||"").trim();});return o;});}
+function detect(rows){var sn=rows[0].student_name||"Estudiante",tn=rows[0].term_name||"",gp="";for(var i=0;i<rows.length;i++){var m=(rows[i].course_code||"").match(/^(BAS\d|BACH?\d)/i);if(m){gp=m[1].toUpperCase();break;}}var gr=GM[gp]||"—";var mx=0;rows.forEach(function(r){var p=parseFloat(r.points_possible)||0;if(p>mx)mx=p;});var bl=4;if(mx<=20)bl=1;else if(mx<=45)bl=2;else if(mx<=70)bl=3;else if(mx<=95)bl=4;else bl=5;return{studentName:sn,termName:tn,grade:gr,bloque:bl,courses:rows.map(function(r){return{name:r.course_name||"",obtained:parseFloat(r.current_points)||0,possible:parseFloat(r.points_possible)||0};})};}
+
+function processFile(f){if(!f)return;document.getElementById("fileNameLabel").textContent=f.name;var reader=new FileReader();reader.onload=function(e){var rows=parseCSV(e.target.result);if(!rows||!rows.length){document.getElementById("error-message").textContent="No se pudo leer el CSV.";showStep("error");return;}var d=detect(rows);_s.courses=d.courses;_s.bloque=d.bloque;_s.punteo=BP[d.bloque]||90;document.getElementById("fld-student").value=d.studentName;document.getElementById("fld-grade").value=d.grade;document.getElementById("fld-term").value=d.termName;document.getElementById("fld-punteo").value=_s.punteo;renderBloque();renderGrades();showStep("preview");};reader.readAsText(f);}
+
+function renderBloque(){var r=document.getElementById("bloque-row");r.innerHTML="";for(var b=1;b<=5;b++){(function(b){var btn=document.createElement("button");btn.className="bloque-btn"+(b===_s.bloque?" active":"");btn.textContent=b;btn.onclick=function(){_s.bloque=b;_s.punteo=BP[b];document.getElementById("fld-punteo").value=_s.punteo;renderBloque();renderGrades();};r.appendChild(btn);})(b);}document.getElementById("punteo-auto-label").textContent="Auto: Bloque "+_s.bloque+" → "+BP[_s.bloque]+" pts";}
+
+function renderGrades(){var p=parseInt(document.getElementById("fld-punteo").value)||_s.punteo;var html="";_s.courses.forEach(function(c){var pct=c.possible>0?(c.obtained/c.possible)*100:0;var ok=pct>=60;html+='<div class="grade-row"><span style="font-weight:500">'+c.name+'</span><span style="color:#555">'+c.obtained.toFixed(2)+'</span><span style="color:#555">'+p+'</span><span class="'+(ok?'status-ok':'status-warn')+'">'+(ok?'✓ Al día':'● Requiere atención')+'</span></div>';});document.getElementById("grades-body").innerHTML=html;}
+
+document.getElementById("logoInput").addEventListener("change",function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){_s.logoData=e.target.result;document.getElementById("logo-area").classList.add("loaded");document.getElementById("logo-text").textContent="✓ Logo cargado: "+f.name;};r.readAsDataURL(f);});
+document.getElementById("firmaInput").addEventListener("change",function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){_s.firmaData=e.target.result;document.getElementById("firma-area").classList.add("loaded");document.getElementById("firma-text").textContent="✓ Firma cargada: "+f.name;};r.readAsDataURL(f);});
+
+function generatePDF(){showStep("generating");setTimeout(function(){try{buildPDF();}catch(err){document.getElementById("error-message").textContent="Error: "+err.message;showStep("error");}},400);}
+
+function buildPDF(){
+  var jsPDF=window.jspdf.jsPDF;
+  var student=document.getElementById("fld-student").value;
+  var grade=document.getElementById("fld-grade").value;
+  var term=document.getElementById("fld-term").value;
+  var fecha=document.getElementById("fld-fecha").value;
+  var punteo=parseInt(document.getElementById("fld-punteo").value)||_s.punteo;
+  var bloque=_s.bloque;
+  var doc=new jsPDF({unit:"pt",format:"letter"});
+  var W=612,ML=32,MR=32,CW=W-ML-MR,y=24;
+  var T=[36,75,90],O=[219,96,21],Y=[247,190,0],LB=[240,248,255],G=[51,51,51];
+
+  // HEADER
+  doc.setFillColor(T[0],T[1],T[2]);doc.roundedRect(ML,y,CW,52,4,4,"F");
+  if(_s.logoData){try{var it=_s.logoData.indexOf("image/png")>-1?"PNG":"JPEG";doc.addImage(_s.logoData,it,ML+8,y+4,90,44);}catch(e){}}
+  doc.setFontSize(14);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);doc.text("BOLETA DE CALIFICACIONES",W-MR-8,y+22,{align:"right"});
+  doc.setFontSize(9);doc.setFont("helvetica","normal");doc.text(term,W-MR-8,y+36,{align:"right"});y+=52;
+
+  // INFO BAR
+  doc.setFillColor(O[0],O[1],O[2]);doc.rect(ML,y,CW,26,"F");doc.setFontSize(8.5);doc.setTextColor(255,255,255);
+  var items=[{l:"Estudiante: ",v:student,x:ML+8},{l:"Grado: ",v:grade,x:ML+CW*.44},{l:"Ciclo: ",v:"Bloque "+bloque,x:ML+CW*.66},{l:"Fecha: ",v:fecha,x:ML+CW*.82}];
+  items.forEach(function(it){doc.setFont("helvetica","bold");doc.text(it.l,it.x,y+16);var lw=doc.getTextWidth(it.l);doc.setFont("helvetica","normal");doc.text(it.v,it.x+lw,y+16);});y+=32;
+
+  // GRADES TABLE
+  var tH=[["CURSO","PUNTEO\nOBTENIDO","PUNTEO\nSUGERIDO","ESTADO"]];
+  var tB=_s.courses.map(function(c){var pct=c.possible>0?(c.obtained/c.possible)*100:0;return[c.name,c.obtained.toFixed(2),String(punteo),pct>=60?"Al día":"● Requiere atención"];});
+  doc.autoTable({startY:y,margin:{left:ML,right:MR},head:tH,body:tB,theme:"grid",
+    styles:{font:"helvetica",fontSize:8,cellPadding:{top:4,bottom:4,left:5,right:5},lineColor:[204,204,204],lineWidth:.5,textColor:G,valign:"middle"},
+    headStyles:{fillColor:Y,textColor:[0,0,0],fontStyle:"bold",halign:"center"},
+    columnStyles:{0:{cellWidth:CW*.46,halign:"left"},1:{cellWidth:CW*.18,halign:"center"},2:{cellWidth:CW*.18,halign:"center"},3:{cellWidth:CW*.18,halign:"center"}},
+    alternateRowStyles:{fillColor:LB},
+    didParseCell:function(data){if(data.section==="body"&&data.column.index===3){if(data.cell.raw==="Al día"){data.cell.styles.textColor=[26,122,26];data.cell.styles.fontStyle="bold";}else{data.cell.styles.textColor=O;data.cell.styles.fontStyle="bold";}}}
+  });y=doc.lastAutoTable.finalY+8;
+
+  // POINT SCALE
+  doc.setFillColor(T[0],T[1],T[2]);doc.rect(ML,y,CW,28,"F");doc.setFontSize(8);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);doc.text("Distribución de Puntos por Bloque",ML+8,y+17);
+  [{b:1,p:16},{b:2,p:40},{b:3,p:64},{b:4,p:90},{b:5,p:100}].forEach(function(bp,i){var cx=ML+CW*.36+i*CW*.128+CW*.064;doc.setFontSize(7);doc.setFont("helvetica","normal");doc.text("Bloque "+bp.b,cx,y+11,{align:"center"});doc.setFont("helvetica","bold");doc.text(bp.p+" pts",cx,y+21,{align:"center"});});y+=36;
+
+  // OBSERVATIONS
+  doc.setFillColor(O[0],O[1],O[2]);doc.rect(ML,y,CW,20,"F");doc.setFontSize(9);doc.setFont("helvetica","bold");doc.setTextColor(255,255,255);doc.text("OBSERVACIONES",ML+8,y+14);y+=20;
+  var obsT="El punteo sugerido es para este bloque como fecha sugerida el 30 de abril. Para la fecha actual puede que en algunos cursos tengan tareas pendientes por calificar para llegar a la nota del Punteo sugerido. Recuerden que el punteo actual es acumulativo hasta llegar a 100 pts.";
+  doc.setFontSize(8);doc.setFont("helvetica","normal");var lines=doc.splitTextToSize(obsT,CW-16);var obsH=lines.length*11+14;
+  doc.setFillColor(LB[0],LB[1],LB[2]);doc.rect(ML,y,CW,obsH,"F");doc.setDrawColor(204,204,204);doc.rect(ML,y,CW,obsH,"S");doc.setTextColor(G[0],G[1],G[2]);doc.text(lines,ML+8,y+12);y+=obsH+10;
+
+  // FIRMA
+  if(_s.firmaData){try{var ft=_s.firmaData.indexOf("image/png")>-1?"PNG":"JPEG";doc.addImage(_s.firmaData,ft,ML+(CW-230)/2,y,230,68);y+=74;}catch(e){y+=6;}}else y+=6;
+
+  // FOOTER
+  doc.setDrawColor(T[0],T[1],T[2]);doc.setLineWidth(1);doc.line(ML,y,W-MR,y);y+=10;
+  doc.setFontSize(7);doc.setTextColor(102,102,102);doc.setFont("helvetica","normal");doc.text("Colegio Escolaris · Educación para trascender · Guatemala",W/2,y,{align:"center"});
+
+  var safeName=student.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"_");
+  _s.lastName="Boleta_"+safeName+".pdf";_s.lastBlob=doc.output("blob");doc.save(_s.lastName);
+  document.getElementById("done-subtitle").textContent="Boleta de "+student+" · "+term+" · Bloque "+bloque;showStep("done");
+}
+
+function redownload(){if(!_s.lastBlob)return;var u=URL.createObjectURL(_s.lastBlob),a=document.createElement("a");a.href=u;a.download=_s.lastName;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);}
+function resetAll(){_s={courses:[],bloque:4,punteo:90,logoData:null,firmaData:null,lastBlob:null,lastName:""};document.getElementById("fileInput").value="";document.getElementById("logoInput").value="";document.getElementById("firmaInput").value="";document.getElementById("logo-area").classList.remove("loaded");document.getElementById("logo-text").textContent="📷 Clic para subir el logo del colegio";document.getElementById("firma-area").classList.remove("loaded");document.getElementById("firma-text").textContent="✍️ Clic para subir firma y sello";showStep("upload");}
+
+document.getElementById("fld-punteo").addEventListener("input",function(){_s.punteo=parseInt(this.value)||0;renderGrades();});
+var dz=document.getElementById("dropzone");
+dz.addEventListener("dragover",function(e){e.preventDefault();dz.classList.add("drag-over");});
+dz.addEventListener("dragleave",function(){dz.classList.remove("drag-over");});
+dz.addEventListener("drop",function(e){e.preventDefault();dz.classList.remove("drag-over");processFile(e.dataTransfer.files[0]);});
+document.getElementById("fileInput").addEventListener("change",function(){processFile(this.files[0]);});
+</script>
+</body>
+</html>
