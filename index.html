@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Boletas - Escolaris</title>
+<style>
+  body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    color: #333; 
+    background-color: #f4f4f9;
+  }
+  .container { 
+    display: flex; 
+    gap: 20px; 
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .form-section { 
+    flex: 1; 
+    border: 1px solid #ccc; 
+    padding: 20px; 
+    background: #fff; 
+    border-radius: 8px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .boleta-section { 
+    flex: 2; 
+    border: 1px solid #000; 
+    padding: 40px; 
+    background: #fff; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  h1, h2, h3 { text-align: center; margin: 5px 0; }
+  .header-text { color: #004080; font-weight: bold; font-size: 28px; }
+  .sub-header { font-style: italic; color: #555; }
+  table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-bottom: 20px; 
+    margin-top: 15px; 
+    font-size: 14px;
+  }
+  th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+  th { background-color: #e9ecef; }
+  .text-left { text-align: left; }
+  .info-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 15px; 
+    margin-bottom: 20px; 
+    margin-top: 20px;
+    font-size: 15px;
+  }
+  .form-group { margin-bottom: 10px; }
+  label { font-weight: bold; display: block; margin-bottom: 4px; font-size: 13px;}
+  input { 
+    padding: 8px; 
+    width: 100%; 
+    box-sizing: border-box; 
+    border: 1px solid #ccc; 
+    border-radius: 4px;
+  }
+  button { 
+    padding: 10px; 
+    width: 100%; 
+    box-sizing: border-box; 
+    color: white; 
+    border: none; 
+    border-radius: 4px;
+    cursor: pointer; 
+    font-weight: bold; 
+    margin-top: 10px;
+  }
+  .btn-add { background-color: #004080; }
+  .btn-add:hover { background-color: #003060; }
+  .btn-print { background-color: #28a745; margin-top: 20px;}
+  .btn-print:hover { background-color: #218838; }
+  .btn-remove { background-color: #dc3545; width: auto; padding: 8px 12px; }
+  
+  .observaciones { font-size: 13px; line-height: 1.5; }
+  .signatures { 
+    display: flex; 
+    justify-content: center; 
+    margin-top: 60px; 
+    text-align: center; 
+  }
+  .signature-line { 
+    border-top: 1px solid #000; 
+    width: 250px; 
+    padding-top: 5px; 
+    font-weight: bold;
+  }
+  .course-row-input { 
+    display: flex; 
+    gap: 5px; 
+    margin-bottom: 8px;
+    align-items: center;
+  }
+
+  /* Ocultar elementos al imprimir */
+  @media print {
+    .form-section, .no-print { display: none !important; }
+    .container { display: block; max-width: 100%; margin: 0; }
+    .boleta-section { border: none; padding: 0; box-shadow: none; }
+    body { margin: 0; background-color: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="form-section no-print">
+    <h3 style="color: #004080; border-bottom: 2px solid #004080; padding-bottom: 10px;">Panel de Edición</h3>
+    
+    <div class="form-group">
+      <label>Estudiante:</label>
+      <input type="text" id="in-estudiante" value="Nancy Natalia Castellanos Mayorga" oninput="updateBoleta()">
+    </div>
+    <div class="form-group">
+      <label>Grado:</label>
+      <input type="text" id="in-grado" value="3º Básico" oninput="updateBoleta()">
+    </div>
+    <div class="form-group">
+      <label>Ciclo:</label>
+      <input type="text" id="in-ciclo" value="Bloque 2" oninput="updateBoleta()">
+    </div>
+    <div class="form-group">
+      <label>Fecha:</label>
+      <input type="text" id="in-fecha" value="Abril 2026" oninput="updateBoleta()">
+    </div>
+
+    <h4 style="margin-top:20px; color: #555;">Cursos y Calificaciones</h4>
+    <div id="courses-inputs"></div>
+    <button type="button" class="btn-add" onclick="addCourse()">+ Añadir Curso</button>
+    
+    <button type="button" class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+  </div>
+
+  <div class="boleta-section" id="boleta">
+    <h1 class="header-text">ESCOLARIS</h1>
+    <h2 class="sub-header">Educación para trascender</h2>
+    <h3>BOLETA DE CALIFICACIONES</h3>
+    <p style="text-align:center; font-weight: bold;">Escolaris Regular 2026</p>
+
+    <div class="info-grid">
+      <div><strong>Estudiante:</strong> <span id="out-estudiante">Nancy Natalia Castellanos Mayorga</span></div>
+      <div><strong>Fecha:</strong> <span id="out-fecha">Abril 2026</span></div>
+      <div><strong>Grado:</strong> <span id="out-grado">3º Básico</span></div>
+      <div><strong>Ciclo:</strong> <span id="out-ciclo">Bloque 2</span></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="text-left">CURSO</th>
+          <th>PUNTEO OBTENIDO</th>
+          <th>PUNTEO SUGERIDO</th>
+          <th>ESTADO</th>
+        </tr>
+      </thead>
+      <tbody id="out-courses">
+        </tbody>
+    </table>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Bloque 1</th>
+          <th>Bloque 2</th>
+          <th>Bloque 3</th>
+          <th>Bloque 4</th>
+          <th>Bloque 5</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>16 pts</td>
+          <td>40 pts</td>
+          <td>64 pts</td>
+          <td>90 pts</td>
+          <td>100 pts</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="observaciones">
+      <p><strong>OBSERVACIONES</strong></p>
+      <p>El punteo sugerido es para este bloque como fecha sugerida el 30 de abril.<br>
+      Para la fecha actual puede que en algunos cursos tengan tareas pendientes por calificar para llegar a la nota del Punteo sugerido.<br>
+      Recuerden que el punteo actual es acumulativo hasta llegar a 100 pts.</p>
+    </div>
+
+    <div class="signatures">
+      <div>
+        <div class="signature-line">Wrodriguez</div>
+        <p style="margin-top: 5px; font-size: 14px;">Director Académico Escolaris<br>DIRECCIÓN</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Cursos iniciales basados en la boleta original
+  const defaultCourses = [
+    { nombre: "Comunicación y Lenguaje", obtenido: "39.76", sugerido: "40", estado: "Al día" },
+    { nombre: "Matemática III", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" },
+    { nombre: "Cultura e Idiomas", obtenido: "37.00", sugerido: "40", estado: "Al día" },
+    { nombre: "Educación Física 3 Básico", obtenido: "32.00", sugerido: "40", estado: "Al día" },
+    { nombre: "Música", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" },
+    { nombre: "Idioma Inglés III", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" }
+  ];
+
+  function renderInputs() {
+    const container = document.getElementById('courses-inputs');
+    container.innerHTML = '';
+    defaultCourses.forEach((curso, index) => {
+      container.innerHTML += `
+        <div class="course-row-input">
+          <input type="text" placeholder="Curso" value="${curso.nombre}" class="c-nombre" oninput="updateBoleta()">
+          <input type="number" step="0.01" placeholder="Obtenido" value="${curso.obtenido}" class="c-obtenido" oninput="updateBoleta()">
+          <input type="number" placeholder="Sugerido" value="${curso.sugerido}" class="c-sugerido" oninput="updateBoleta()">
+          <input type="text" placeholder="Estado" value="${curso.estado}" class="c-estado" oninput="updateBoleta()">
+          <button type="button" class="btn-remove" onclick="removeCourse(${index})">X</button>
+        </div>
+      `;
+    });
+    updateBoleta();
+  }
+
+  function addCourse() {
+    defaultCourses.push({ nombre: "Nuevo Curso", obtenido: "0.00", sugerido: "40", estado: "Al día" });
+    renderInputs();
+  }
+
+  function removeCourse(index) {
+    defaultCourses.splice(index, 1);
+    renderInputs();
+  }
+
+  function updateBoleta() {
+    // Actualizar encabezados
+    document.getElementById('out-estudiante').innerText = document.getElementById('in-estudiante').value || "---";
+    document.getElementById('out-grado').innerText = document.getElementById('in-grado').value || "---";
+    document.getElementById('out-ciclo').innerText = document.getElementById('in-ciclo').value || "---";
+    document.getElementById('out-fecha').innerText = document.getElementById('in-fecha').value || "---";
+
+    // Actualizar tabla de cursos
+    const rows = document.querySelectorAll('.course-row-input');
+    const outContainer = document.getElementById('out-courses');
+    outContainer.innerHTML = '';
+
+    rows.forEach((row, i) => {
+      const nombre = row.querySelector('.c-nombre').value;
+      const obtenido = row.querySelector('.c-obtenido').value;
+      const sugerido = row.querySelector('.c-sugerido').value;
+      const estado = row.querySelector('.c-estado').value;
+      
+      // Actualizar el array interno
+      defaultCourses[i] = { nombre, obtenido, sugerido, estado };
+
+      outContainer.innerHTML += `
+        <tr>
+          <td class="text-left">${nombre}</td>
+          <td>${obtenido}</td>
+          <td>${sugerido}</td>
+          <td>${estado}</td>
+        </tr>
+      `;
+    });
+  }
+
+  // Inicializar al cargar
+  window.onload = renderInputs;
+</script>
+</body>
+</html>
