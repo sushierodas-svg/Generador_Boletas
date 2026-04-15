@@ -79,6 +79,15 @@
   .btn-print:hover { background-color: #218838; }
   .btn-remove { background-color: #dc3545; width: auto; padding: 8px 12px; }
   
+  .csv-upload {
+    background-color: #eef2f5;
+    padding: 15px;
+    border: 1px dashed #004080;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
   .observaciones { font-size: 13px; line-height: 1.5; }
   .signatures { 
     display: flex; 
@@ -131,9 +140,15 @@
       <input type="text" id="in-fecha" value="Abril 2026" oninput="updateBoleta()">
     </div>
 
-    <h4 style="margin-top:20px; color: #555;">Cursos y Calificaciones</h4>
+    <div class="csv-upload">
+      <label for="csv-file" style="color: #004080; cursor: pointer;">📄 Cargar notas desde CSV</label>
+      <input type="file" id="csv-file" accept=".csv" onchange="handleCSV(event)" style="margin-top: 10px;">
+      <small style="display:block; margin-top:5px; color:#666;">Formato: Curso, Obtenido, Sugerido, Estado</small>
+    </div>
+
+    <h4 style="margin-top:10px; color: #555;">Cursos y Calificaciones</h4>
     <div id="courses-inputs"></div>
-    <button type="button" class="btn-add" onclick="addCourse()">+ Añadir Curso</button>
+    <button type="button" class="btn-add" onclick="addCourse()">+ Añadir Curso manual</button>
     
     <button type="button" class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
   </div>
@@ -202,15 +217,53 @@
 </div>
 
 <script>
-  // Cursos iniciales basados en la boleta original
-  const defaultCourses = [
+  let defaultCourses = [
     { nombre: "Comunicación y Lenguaje", obtenido: "39.76", sugerido: "40", estado: "Al día" },
-    { nombre: "Matemática III", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" },
-    { nombre: "Cultura e Idiomas", obtenido: "37.00", sugerido: "40", estado: "Al día" },
-    { nombre: "Educación Física 3 Básico", obtenido: "32.00", sugerido: "40", estado: "Al día" },
-    { nombre: "Música", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" },
-    { nombre: "Idioma Inglés III", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" }
+    { nombre: "Matemática III", obtenido: "16.00", sugerido: "40", estado: "Requiere atención" }
   ];
+
+  // Función para leer y procesar el CSV
+  function handleCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const content = e.target.result;
+      const lines = content.split('\n');
+      
+      let newCourses = [];
+      
+      // Empezamos desde 1 para ignorar la fila de encabezados (si la hay)
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line) {
+          // Separamos por comas (o punto y coma si Excel lo guarda así)
+          const cols = line.split(/[,;]/); 
+          if (cols.length >= 4) {
+            newCourses.push({
+              nombre: cols[0].trim(),
+              obtenido: cols[1].trim(),
+              sugerido: cols[2].trim(),
+              estado: cols[3].trim()
+            });
+          }
+        }
+      }
+
+      if (newCourses.length > 0) {
+        defaultCourses = newCourses;
+        renderInputs();
+        alert("¡Cursos cargados exitosamente!");
+      } else {
+        alert("No se encontraron datos válidos en el CSV. Verifica el formato.");
+      }
+      
+      // Limpiar el input file por si se quiere volver a subir el mismo archivo
+      event.target.value = '';
+    };
+    reader.readAsText(file);
+  }
 
   function renderInputs() {
     const container = document.getElementById('courses-inputs');
@@ -230,7 +283,7 @@
   }
 
   function addCourse() {
-    defaultCourses.push({ nombre: "Nuevo Curso", obtenido: "0.00", sugerido: "40", estado: "Al día" });
+    defaultCourses.push({ nombre: "", obtenido: "0.00", sugerido: "40", estado: "Al día" });
     renderInputs();
   }
 
@@ -240,13 +293,11 @@
   }
 
   function updateBoleta() {
-    // Actualizar encabezados
     document.getElementById('out-estudiante').innerText = document.getElementById('in-estudiante').value || "---";
     document.getElementById('out-grado').innerText = document.getElementById('in-grado').value || "---";
     document.getElementById('out-ciclo').innerText = document.getElementById('in-ciclo').value || "---";
     document.getElementById('out-fecha').innerText = document.getElementById('in-fecha').value || "---";
 
-    // Actualizar tabla de cursos
     const rows = document.querySelectorAll('.course-row-input');
     const outContainer = document.getElementById('out-courses');
     outContainer.innerHTML = '';
@@ -257,7 +308,6 @@
       const sugerido = row.querySelector('.c-sugerido').value;
       const estado = row.querySelector('.c-estado').value;
       
-      // Actualizar el array interno
       defaultCourses[i] = { nombre, obtenido, sugerido, estado };
 
       outContainer.innerHTML += `
